@@ -2,8 +2,8 @@ import os
 import pyttsx3
 import sounddevice as sd
 import numpy as np
+import google.generativeai as genai
 from vosk import Model, KaldiRecognizer
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 # Inicializa o sintetizador de voz
 engine = pyttsx3.init()
@@ -17,12 +17,8 @@ if not os.path.exists(model_path):
 # Carrega o modelo VOSK
 vosk_model = Model(model_path)
 
-# Carrega o modelo GPT-J da EleutherAI
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
-gptj_model = AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B")
-
-# Define o pipeline para o GPT-J
-chatbot = pipeline("text-generation", model=gptj_model, tokenizer=tokenizer, max_length=100)
+# Configura a chave da API do Gemini
+genai.configure(api_key="sua-api-key")  # Insira sua chave da API do Gemini
 
 def ouvir_usuario():
     """Escuta o usuário usando VOSK e converte a fala em texto."""
@@ -41,17 +37,14 @@ def ouvir_usuario():
                 audio.append(np.frombuffer(data, dtype=np.int16))
 
 def gerar_resposta(pergunta):
-    """Gera uma resposta baseada na pergunta do usuário usando o modelo GPT-J."""
-    resposta = chatbot(
-        pergunta,
-        max_length=100,
-        temperature=0.7,   # Controle de aleatoriedade para respostas mais naturais
-        top_k=50,          # Limita a escolha das palavras para uma saída mais coesa
-        top_p=0.9          # Considera apenas palavras com probabilidade cumulativa de 90%
-    )[0]['generated_text']
-
-    # Remove a pergunta inicial da resposta para deixá-la mais natural
-    resposta = resposta[len(pergunta):].strip()
+    """Gera uma resposta baseada na pergunta do usuário usando o modelo Gemini."""
+    # Chamando o modelo Gemini para gerar a resposta corretamente
+    response = genai.chat(
+        model="google/gemini-1",  # Ou o modelo correto que você tem acesso
+        messages=[{"role": "user", "content": pergunta}]
+    )
+    
+    resposta = response["message"]["content"].strip()
     print("Resposta:", resposta)
     return resposta
 
